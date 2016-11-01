@@ -1,0 +1,23 @@
+package: wawa_b.v1
+import:
+- package: github.com/labstack/echo
+  version: ~2.x
+- package: gopkg.in/mgo.v2
+- package: gopkg.in/redis.v4
+  version: ~4.x
+- package: github.com/satori/go.uuid
+  version: ~1.x
+- package: github.com/pquerna/ffjson
+- package: github.com/valyala/fasthttp
+  version: v20160617
+- package: github.com/stretchr/testify
+  version: ~1.x
+  subpackages:
+  - assert
+- package: github.com/deckarep/golang-set
+  version: ~1.x
+- package: github.com/Jeffail/gabs
+- package: github.com/Sirupsen/logrus
+  version: ~0.x
+- package: github.com/clbanning/mxj
+- package: github.com/spf13/viper
