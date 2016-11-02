@@ -1,0 +1,33 @@
+{
+  "backend": {
+    "host": "hhxx-b-wawa.iok.la"
+  },
+  "database": {
+    "mongodb": {
+      "host": "localhost"
+    }
+  },
+  "frontend": {
+    "host": "huahongxinxin.f.wawa.duducloud.cn"
+  },
+  "listen": {
+    "port": 80
+  },
+  "session": {
+    "storage": {
+      "redis": {
+        "host": "192.168.0.4"
+      }
+    }
+  },
+  "top": {
+    "appKey": "23511612",
+    "appSecret": "364979beb4dd2e806409bcf272e6935a"
+  },
+  "wechat": {
+    "appId": "wx7b5f3bb13efd5e07",
+    "appSecret": "0252ed3e07bc407b75cda0bb5bf33659",
+    "mchId": "1360138702",
+    "partnerKey": "dl9CsJs7Jux2QE6GmPDQZ7iwWm3uMP6L"
+  }
+}

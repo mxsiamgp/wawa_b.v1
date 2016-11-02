@@ -7,4 +7,5 @@ vendor/
 glide.lock
 
 # Project
-entry/
+config/**/*
+!config/default.json

@@ -42,6 +42,9 @@ const (
 
 // 失败代码
 const (
+	// 不能删除主办方管理员
+	FAIL_CD_CANNOT_DELETE_SPONSOR_MANAGER = "USER.CANNOT_DELETE_SPONSOR_MANAGER"
+
 	// 密码不正确
 	FAIL_CD_INCORRECT_PASSWORD = "USER.INCORRECT_PASSWORD"
 
@@ -70,6 +73,12 @@ type DeleteParam struct {
 func DeleteProcessHandler(userMgr business.UserManager) rest_json_rpc.ProcessHandler {
 	return func(ctx echo.Context, p interface{}, _ *rest_json_rpc.ProcessChain) interface{} {
 		param := p.(*DeleteParam)
+
+		user := userMgr.Get(param.ID)
+		if user != nil && permission.IsInclude(user.FlatPermissions, []string{"USER.SPONSOR_MANAGER"}) {
+			panic(failure.New(FAIL_CD_CANNOT_DELETE_SPONSOR_MANAGER))
+		}
+
 		userMgr.Delete(param.ID)
 		return nil
 	}

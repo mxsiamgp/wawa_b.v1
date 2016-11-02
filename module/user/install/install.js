@@ -11,3 +11,20 @@ db.WechatUserBindings.ensureIndex({
 }, {
     unique: true
 });
+
+db.Users.insert({
+    name: 'admin',
+    passwordDigest: '21232f297a57a5a743894a0e4a801fc3',
+    nickname: '主办方管理员',
+    mobile: '',
+    flatPermissions: [
+        'TICKET.INSPECT',
+        'USER.MERCHANT_STAFF.RETRIEVE',
+        'USER.MERCHANT_STAFF.MODIFY',
+        'MERCHANT.RETRIEVE',
+        'MERCHANT.MODIFY',
+        'USER.RETRIEVE',
+        'USER.MODIFY',
+        'USER.SPONSOR_MANAGER'
+    ]
+});

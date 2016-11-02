@@ -1,0 +1,50 @@
+{
+  "backend": {
+    "host": ""
+  },
+  "database": {
+    "mongodb": {
+      "host": "",
+      "port": 27017
+    }
+  },
+  "frontend": {
+    "host": ""
+  },
+  "listen": {
+    "port": 80
+  },
+  "session": {
+    "storage": {
+      "redis": {
+        "host": "",
+        "port": 6379
+      },
+      "expiration": 1800000
+    }
+  },
+  "top": {
+    "appKey": "",
+    "appSecret": "",
+    "mobileCaptchaManager": {
+      "user": {
+        "register": {
+          "templateCode": "SMS_8980985",
+          "product": "海南超跑赛车收费服务平台",
+          "sign": "注册验证"
+        },
+        "retakePassword": {
+          "templateCode": "SMS_8980983",
+          "product": "海南超跑赛车收费服务平台",
+          "sign": "变更验证"
+        }
+      }
+    }
+  },
+  "wechat": {
+    "appId": "",
+    "appSecret": "",
+    "mchId": "",
+    "partnerKey": ""
+  }
+}
