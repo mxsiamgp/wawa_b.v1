@@ -240,7 +240,7 @@ func main() {
 	})
 
 	// 商家模块过程
-	mcMgr := merchant_business.NewMongoDBMerchantManager(mgoConn.DB("mxsiamgp"))
+	mcMgr := merchant_business.NewMongoDBMerchantManager(mgoConn.DB("mxsiamgp"), userMgr)
 	rpc.RegisterProcess("merchant.delete", &rest_json_rpc.Process{
 		Handlers: []rest_json_rpc.ProcessHandler{
 			user_service.EnsureLoggedInProcessHandler(),
@@ -268,7 +268,7 @@ func main() {
 			user_service.EnsureRequiredPermissionsProcessHandler(userMgr, []string{
 				"MERCHANT.MODIFY",
 			}),
-			merchant_service.RegisterProcessHandler(mcMgr),
+			merchant_service.RegisterProcessHandler(mcMgr, userMgr),
 		},
 		ParamFactory: func() interface{} {
 			return &merchant_service.RegisterParam{}

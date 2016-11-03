@@ -10,6 +10,12 @@ type Merchant struct {
 	// 商家店名
 	Name            string `bson:"name" json:"name"`
 
+	// 管理员用户ID
+	ManagerUserID   bson.ObjectId `bson:"managerUserId" json:"manager_user_id"`
+
+	// 管理员用户名（冗余）
+	ManagerUserName string `bson:"managerUserName" json:"manager_user_name"`
+
 	// 经营项目
 	ItemsOfBusiness string `bson:"itemsOfBusiness" json:"items_of_business"`
 
