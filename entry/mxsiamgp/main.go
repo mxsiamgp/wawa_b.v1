@@ -227,7 +227,8 @@ func main() {
 	wcLoginURL := &url.URL{
 		Scheme: "http",
 		Host: v.GetString("frontend.host"),
-		Path: "/module/wechat/html/index.html#/user/wechat/login",
+		Path: "/module/wechat/html/index.html",
+		Fragment: "#/user/wechat/login",
 	}
 	e.GET("/user/wechat_auth", user_service.WechatAuthHandlerFunc(userMgr, wcCli, wcLoginURL.String()))
 	rpc.RegisterProcess("user.logout", &rest_json_rpc.Process{
