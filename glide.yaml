@@ -14,10 +14,10 @@ import:
   version: ~1.x
   subpackages:
   - assert
-- package: github.com/deckarep/golang-set
-  version: ~1.x
 - package: github.com/Jeffail/gabs
 - package: github.com/Sirupsen/logrus
   version: ~0.x
 - package: github.com/clbanning/mxj
 - package: github.com/spf13/viper
+- package: github.com/fatih/set
+  version: ~0.x

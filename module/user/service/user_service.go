@@ -9,7 +9,7 @@ import (
 	"wawa_b.v1/module/rest_json_rpc/failure"
 	"wawa_b.v1/module/session"
 	"wawa_b.v1/module/user/business"
-	"wawa_b.v1/module/user/util/permission"
+	"wawa_b.v1/module/user/domain/permission"
 	"wawa_b.v1/module/wechat_client"
 
 	"github.com/labstack/echo"

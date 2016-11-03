@@ -5,7 +5,7 @@ import (
 	"wawa_b.v1/module/js_regex"
 	"wawa_b.v1/module/rest_json_rpc/failure"
 	"wawa_b.v1/module/user/domain"
-	"wawa_b.v1/module/user/util/permission"
+	"wawa_b.v1/module/user/domain/permission"
 
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -143,7 +143,7 @@ func (mgr *MongoDBUserManager) GrantFlatPermissions(granterID, granteeID string,
 
 	if err := mgr.userCollection.UpdateId(bson.ObjectIdHex(granteeID), bson.M{
 		"$set": bson.M{
-			"flatPermissions": perms,
+			"flatPermissions": permission.Permissions(perms),
 		},
 	}); err != nil {
 		panic(err)
@@ -165,7 +165,7 @@ func (mgr *MongoDBUserManager) Register(kind, name, password, nickname, mobile s
 		PasswordDigest: md5.StringDigest([]byte(password)),
 		Nickname: nickname,
 		Mobile: mobile,
-		FlatPermissions: perms,
+		FlatPermissions: permission.Permissions(perms),
 	}); err != nil {
 		panic(err)
 	}
