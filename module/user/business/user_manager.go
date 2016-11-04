@@ -49,6 +49,9 @@ type UserManager interface {
 	// 用户检索
 	Retrieve(lastID *string, limit int, name string, nickname string) []*domain.User
 
+	// 解绑微信OpenID
+	UnbindWechatOpenID(wechatOpenID string)
+
 	// 更新一个用户的基本信息
 	Update(id, nickname string)
 
@@ -194,6 +197,14 @@ func (mgr *MongoDBUserManager) Retrieve(lastID *string, limit int, name, nicknam
 		panic(err)
 	}
 	return users
+}
+
+func (mgr *MongoDBUserManager) UnbindWechatOpenID(wechatOpenID string) {
+	if err := mgr.wechatUserBindingCollection.Remove(bson.M{
+		"openId": wechatOpenID,
+	}); err != nil {
+		panic(err)
+	}
 }
 
 func (mgr *MongoDBUserManager) Update(id, nickname string) {

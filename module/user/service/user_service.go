@@ -258,6 +258,25 @@ func LogoutProcessHandler() rest_json_rpc.ProcessHandler {
 	}
 }
 
+type LogoutForWechatParam struct{}
+
+// 微信注销
+// + 确保微信授权
+func LogoutForWechatProcessHandler(userMgr business.UserManager) rest_json_rpc.ProcessHandler {
+	return func(ctx echo.Context, p interface{}, _ *rest_json_rpc.ProcessChain) interface{} {
+		sess := session.GetSessionByContext(ctx)
+
+		accToken := &wechat_client.WechatAccessToken{}
+		if !sess.Get(SESS_KEY_CURRENT_USER_WECHAT_ACCESS_TOKEN, accToken) {
+			panic(errors.New("请确保微信已授权"))
+		}
+		userMgr.UnbindWechatOpenID(accToken.OpenID)
+
+		sess.Remove(SESS_KEY_CURRENT_USER_ID)
+		return nil
+	}
+}
+
 type RegisterParam struct {
 	// 用户类型
 	Kind              string `json:"kind"`
