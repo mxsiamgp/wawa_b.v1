@@ -4,8 +4,3 @@ db.Merchants.ensureIndex({
 }, {
     unique: true
 });
-db.Merchants.ensureIndex({
-    managerUserId: 1
-}, {
-    unique: true
-});
