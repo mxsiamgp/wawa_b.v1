@@ -19,8 +19,8 @@ db.Users.insert({
     mobile: '',
     flatPermissions: [
         'TICKET.INSPECT',
-        'USER.MERCHANT_STAFF.RETRIEVE',
-        'USER.MERCHANT_STAFF.MODIFY',
+        'MERCHANT.STAFF.RETRIEVE',
+        'MERCHANT.STAFF.MODIFY',
         'MERCHANT.RETRIEVE',
         'MERCHANT.MODIFY',
         'USER.RETRIEVE',

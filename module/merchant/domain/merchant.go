@@ -16,6 +16,9 @@ type Merchant struct {
 	// 管理员用户名（冗余）
 	ManagerUserName string `bson:"managerUserName" json:"manager_user_name"`
 
+	// 员工用户ID集
+	StaffUsersIds   []bson.ObjectId `bson:"staffUserIds" json:"staff_users_ids"`
+
 	// 经营项目
 	ItemsOfBusiness string `bson:"itemsOfBusiness" json:"items_of_business"`
 

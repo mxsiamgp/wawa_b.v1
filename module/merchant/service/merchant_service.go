@@ -16,8 +16,14 @@ import (
 
 // 失败代码
 const (
-	// 管理员用户不存在
-	FAIL_CD_NO_SUCH_MANAGER_USER = "MERCHANT.NO_SUCH_MANAGER_USER"
+	// 当前用户未绑定商家
+	FAIL_CD_CURRENT_USER_UNBOUNDED_MERCHANTS = "MERCHANT.CURRENT_USER_UNBOUNDED_MERCHANTS"
+
+	// 用户不存在
+	FAIL_CD_NO_SUCH_USER = "MERCHANT.NO_SUCH_USER"
+
+	// 资源不隶属该商家
+	FAIL_CD_RESOURCE_NOT_BELONG_TO_CURRENT_MERCHANT = "MERCHANT.RESOURCE_NOT_BELONG_TO_CURRENT_MERCHANT"
 )
 
 type DeleteParam struct {
@@ -34,6 +40,53 @@ func DeleteProcessHandler(mcMgr merchant_business.MerchantManager) rest_json_rpc
 	}
 }
 
+// 资源是否属于该商家
+type ResourceBelongToMerchant func(ctx echo.Context, param interface{}, merchantID string) bool
+
+// 确保操作属于当前商家的资源
+// + 确保登录
+func EnsureResourceBelongToCurrentMerchantProcessHandler(mcMgr merchant_business.MerchantManager, rbtm ResourceBelongToMerchant) rest_json_rpc.ProcessHandler {
+	return func(ctx echo.Context, p interface{}, ch *rest_json_rpc.ProcessChain) interface{} {
+		sess := session.GetSessionByContext(ctx)
+		userID := new(bson.ObjectId)
+		if !sess.Get(user_service.SESS_KEY_CURRENT_USER_ID, userID) {
+			panic(errors.New("请确保用户已登录"))
+		}
+
+		merchant := mcMgr.GetByUserID(userID.Hex())
+		if merchant == nil {
+			panic(failure.New(FAIL_CD_CURRENT_USER_UNBOUNDED_MERCHANTS))
+		}
+
+		if !rbtm(ctx, p, merchant.ID.Hex()) {
+			panic(failure.New(FAIL_CD_RESOURCE_NOT_BELONG_TO_CURRENT_MERCHANT))
+		}
+
+		return ch.Next()
+	}
+}
+
+type GetCurrentMerchantParam struct{}
+
+// 获取当前商家
+// + 确保登录
+func GetCurrentMerchantProcessHandler(mcMgr merchant_business.MerchantManager) rest_json_rpc.ProcessHandler {
+	return func(ctx echo.Context, p interface{}, _ *rest_json_rpc.ProcessChain) interface{} {
+		sess := session.GetSessionByContext(ctx)
+		userID := new(bson.ObjectId)
+		if !sess.Get(user_service.SESS_KEY_CURRENT_USER_ID, userID) {
+			panic(errors.New("请确保用户已登录"))
+		}
+
+		merchant := mcMgr.GetByUserID(userID.Hex())
+		if merchant == nil {
+			panic(failure.New(FAIL_CD_CURRENT_USER_UNBOUNDED_MERCHANTS))
+		}
+
+		return merchant
+	}
+}
+
 type GetParam struct {
 	// ID
 	ID string `json:"id"`
@@ -44,6 +97,47 @@ func GetProcessHandler(mcMgr merchant_business.MerchantManager) rest_json_rpc.Pr
 	return func(_ echo.Context, p interface{}, _ *rest_json_rpc.ProcessChain) interface{} {
 		param := p.(*GetParam)
 		return mcMgr.Get(param.ID)
+	}
+}
+
+type KickOutStaffParam struct {
+	// 用户ID
+	UserID string `json:"user_id"`
+}
+
+// 踢出员工
+func KickOutStaffProcessHandler(mcMgr merchant_business.MerchantManager) rest_json_rpc.ProcessHandler {
+	return func(_ echo.Context, p interface{}, _ *rest_json_rpc.ProcessChain) interface{} {
+		param := p.(*KickOutStaffParam)
+		if err := mcMgr.KickOutStaff(param.UserID); err != nil {
+			panic(err)
+		}
+		return nil
+	}
+}
+
+type PullInStaffParam struct {
+	// 商家ID
+	MerchantID string `json:"merchant_id"`
+
+	// 用户名
+	Name       string `json:"name"`
+}
+
+// 拉入员工
+func PullInStaffProcessHandler(mcMgr merchant_business.MerchantManager, userMgr user_business.UserManager) rest_json_rpc.ProcessHandler {
+	return func(_ echo.Context, p interface{}, _ *rest_json_rpc.ProcessChain) interface{} {
+		param := p.(*PullInStaffParam)
+
+		user := userMgr.GetByName(param.Name)
+		if user == nil {
+			panic(failure.New(FAIL_CD_NO_SUCH_USER))
+		}
+
+		if err := mcMgr.PullInStaff(param.MerchantID, user.ID.Hex()); err != nil {
+			panic(err)
+		}
+		return nil
 	}
 }
 
@@ -78,7 +172,7 @@ func RegisterProcessHandler(mcMgr merchant_business.MerchantManager, userMgr use
 
 		mgrUser := userMgr.GetByName(param.ManagerUserName)
 		if mgrUser == nil {
-			panic(failure.New(FAIL_CD_NO_SUCH_MANAGER_USER))
+			panic(failure.New(FAIL_CD_NO_SUCH_USER))
 		}
 
 		sess := session.GetSessionByContext(ctx)
@@ -107,6 +201,25 @@ func RetrieveProcessHandler(mcMgr merchant_business.MerchantManager) rest_json_r
 	return func(_ echo.Context, p interface{}, _ *rest_json_rpc.ProcessChain) interface{} {
 		param := p.(*RetrieveParam)
 		return mcMgr.Retrieve(param.LastID, 15, param.Name)
+	}
+}
+
+type RetrieveStaffsParam struct {
+	// 最后一个ID
+	LastID     *string `json:"last_id"`
+
+	// 商家ID
+	MerchantID string `json:"merchant_id"`
+
+	// 员工用户名
+	Name       string `json:"name"`
+}
+
+// 检索指定商家员工
+func RetrieveStaffsProcessHandler(mcMgr merchant_business.MerchantManager) rest_json_rpc.ProcessHandler {
+	return func(_ echo.Context, p interface{}, _ *rest_json_rpc.ProcessChain) interface{} {
+		param := p.(*RetrieveStaffsParam)
+		return mcMgr.RetrieveStaffs(param.LastID, 15, param.MerchantID, param.Name)
 	}
 }
 

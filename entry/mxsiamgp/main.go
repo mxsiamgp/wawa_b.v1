@@ -263,6 +263,43 @@ func main() {
 			return &merchant_service.GetParam{}
 		},
 	})
+	rpc.RegisterProcess("merchant.get_current_merchant", &rest_json_rpc.Process{
+		Handlers: []rest_json_rpc.ProcessHandler{
+			user_service.EnsureLoggedInProcessHandler(),
+			merchant_service.GetCurrentMerchantProcessHandler(mcMgr),
+		},
+		ParamFactory: func() interface{} {
+			return &merchant_service.GetCurrentMerchantParam{}
+		},
+	})
+	rpc.RegisterProcess("merchant.kick_out_staff", &rest_json_rpc.Process{
+		Handlers: []rest_json_rpc.ProcessHandler{
+			user_service.EnsureLoggedInProcessHandler(),
+			user_service.EnsureRequiredPermissionsProcessHandler(userMgr, []string{
+				"MERCHANT.STAFF.MODIFY",
+			}),
+			merchant_service.KickOutStaffProcessHandler(mcMgr),
+		},
+		ParamFactory: func() interface{} {
+			return &merchant_service.KickOutStaffParam{}
+		},
+	})
+	rpc.RegisterProcess("merchant.pull_in_staff", &rest_json_rpc.Process{
+		Handlers: []rest_json_rpc.ProcessHandler{
+			user_service.EnsureLoggedInProcessHandler(),
+			user_service.EnsureRequiredPermissionsProcessHandler(userMgr, []string{
+				"MERCHANT.STAFF.MODIFY",
+			}),
+			merchant_service.EnsureResourceBelongToCurrentMerchantProcessHandler(mcMgr, func(_ echo.Context, p interface{}, merchantID string) bool {
+				param := p.(*merchant_service.PullInStaffParam)
+				return param.MerchantID == merchantID
+			}),
+			merchant_service.PullInStaffProcessHandler(mcMgr, userMgr),
+		},
+		ParamFactory: func() interface{} {
+			return &merchant_service.PullInStaffParam{}
+		},
+	})
 	rpc.RegisterProcess("merchant.register", &rest_json_rpc.Process{
 		Handlers: []rest_json_rpc.ProcessHandler{
 			user_service.EnsureLoggedInProcessHandler(),
@@ -285,6 +322,22 @@ func main() {
 		},
 		ParamFactory: func() interface{} {
 			return &merchant_service.RetrieveParam{}
+		},
+	})
+	rpc.RegisterProcess("merchant.retrieve_staffs", &rest_json_rpc.Process{
+		Handlers: []rest_json_rpc.ProcessHandler{
+			user_service.EnsureLoggedInProcessHandler(),
+			user_service.EnsureRequiredPermissionsProcessHandler(userMgr, []string{
+				"MERCHANT.STAFF.RETRIEVE",
+			}),
+			merchant_service.EnsureResourceBelongToCurrentMerchantProcessHandler(mcMgr, func(_ echo.Context, p interface{}, merchantID string) bool {
+				param := p.(*merchant_service.RetrieveStaffsParam)
+				return param.MerchantID == merchantID
+			}),
+			merchant_service.RetrieveStaffsProcessHandler(mcMgr),
+		},
+		ParamFactory: func() interface{} {
+			return &merchant_service.RetrieveStaffsParam{}
 		},
 	})
 	rpc.RegisterProcess("merchant.update", &rest_json_rpc.Process{

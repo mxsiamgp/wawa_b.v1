@@ -2,9 +2,10 @@ package business
 
 import (
 	"wawa_b.v1/module/js_regex"
-	"wawa_b.v1/module/merchant/domain"
+	merchant_domain "wawa_b.v1/module/merchant/domain"
 	"wawa_b.v1/module/rest_json_rpc/failure"
 	"wawa_b.v1/module/user/business"
+	user_domain "wawa_b.v1/module/user/domain"
 	"wawa_b.v1/module/user/domain/permission"
 
 	"github.com/fatih/set"
@@ -14,17 +15,15 @@ import (
 
 // 失败代码
 const (
-	// 管理员用户已经绑定了商家
-	FAIL_CD_MANAGER_USER_IS_BOUND = "MERCHANT.MANAGER_USER_BOUND"
+	// 不能踢出管理员
+	FAIL_CD_CANNOT_KICK_OUT_MANAGER = "MERCHANT.CANNOT_KICK_OUT_MANAGER"
 
 	// 商家店名重复
 	FAIL_CD_DUPLICATE_MERCHANT_NAME = "MERCHANT.DUPLICATE_MERCHANT_NAME"
-)
 
-var MERCHANT_PERMISSIONS = []string{
-	"USER.MERCHANT_STAFF.RETRIEVE",
-	"USER.MERCHANT_STAFF.MODIFY",
-}
+	// 用户已经绑定了商家
+	FAIL_CD_USER_IS_BOUND = "MERCHANT.USER_IS_BOUND"
+)
 
 // 商家管理器
 type MerchantManager interface {
@@ -32,19 +31,28 @@ type MerchantManager interface {
 	Delete(id string)
 
 	// 获取一个商家
-	Get(id string) *domain.Merchant
+	Get(id string) *merchant_domain.Merchant
 
 	// 根据名称获取一个商家
-	GetByName(name string) *domain.Merchant
+	GetByName(name string) *merchant_domain.Merchant
 
-	// 根据管理员用户ID获取一个商家
-	GetByManagerUserID(mgrUserID string) *domain.Merchant
+	// 根据用户ID获取一个商家
+	GetByUserID(userID string) *merchant_domain.Merchant
+
+	// 踢出员工
+	KickOutStaff(userID string) error
+
+	// 拉入员工
+	PullInStaff(merchantID, userID string) error
 
 	// 注册一个新商家
 	Register(userID, name, managerUserID, itemsOfBusiness, contactsName, contactsMobile, contactsIDCard, contactsAddress string) error
 
-	// 商家检索
-	Retrieve(lastID *string, limit int, name string) []*domain.Merchant
+	// 检索商家
+	Retrieve(lastID *string, limit int, name string) []*merchant_domain.Merchant
+
+	// 检索指定商家员工
+	RetrieveStaffs(lastID *string, limit int, merchantID string, name string) []*user_domain.User
 
 	// 更新一个商家的基本信息
 	Update(id, name, itemsOfBusiness, contactsName, contactsMobile, contactsIDCard, contactsAddress string)
@@ -55,6 +63,9 @@ type MongoDBMerchantManager struct {
 	// 商家集合
 	merchantCollection *mgo.Collection
 
+	// 用户集合
+	userCollection     *mgo.Collection
+
 	// 用户管理器
 	userManager        business.UserManager
 }
@@ -63,6 +74,7 @@ type MongoDBMerchantManager struct {
 func NewMongoDBMerchantManager(mxsDB *mgo.Database, userMgr business.UserManager) *MongoDBMerchantManager {
 	return &MongoDBMerchantManager{
 		merchantCollection: mxsDB.C("Merchants"),
+		userCollection: mxsDB.C("Users"),
 		userManager: userMgr,
 	}
 }
@@ -73,8 +85,8 @@ func (mgr *MongoDBMerchantManager) Delete(id string) {
 	}
 }
 
-func (mgr *MongoDBMerchantManager) Get(id string) *domain.Merchant {
-	merchants := make([]*domain.Merchant, 0)
+func (mgr *MongoDBMerchantManager) Get(id string) *merchant_domain.Merchant {
+	merchants := make([]*merchant_domain.Merchant, 0)
 	if err := mgr.merchantCollection.FindId(bson.ObjectIdHex(id)).All(&merchants); err != nil {
 		panic(err)
 	}
@@ -84,8 +96,8 @@ func (mgr *MongoDBMerchantManager) Get(id string) *domain.Merchant {
 	return merchants[0]
 }
 
-func (mgr *MongoDBMerchantManager) GetByName(name string) *domain.Merchant {
-	merchants := make([]*domain.Merchant, 0)
+func (mgr *MongoDBMerchantManager) GetByName(name string) *merchant_domain.Merchant {
+	merchants := make([]*merchant_domain.Merchant, 0)
 	if err := mgr.merchantCollection.Find(bson.M{
 		"name": name,
 	}).All(&merchants); err != nil {
@@ -97,10 +109,17 @@ func (mgr *MongoDBMerchantManager) GetByName(name string) *domain.Merchant {
 	return merchants[0]
 }
 
-func (mgr *MongoDBMerchantManager) GetByManagerUserID(managerUserID string) *domain.Merchant {
-	merchants := make([]*domain.Merchant, 0)
+func (mgr *MongoDBMerchantManager) GetByUserID(userID string) *merchant_domain.Merchant {
+	merchants := make([]*merchant_domain.Merchant, 0)
 	if err := mgr.merchantCollection.Find(bson.M{
-		"managerUserId": bson.ObjectIdHex(managerUserID),
+		"$or": []interface{}{
+			bson.M{
+				"managerUserId": bson.ObjectIdHex(userID),
+			},
+			bson.M{
+				"staffUserIds": bson.ObjectIdHex(userID),
+			},
+		},
 	}).All(&merchants); err != nil {
 		panic(err)
 	}
@@ -110,18 +129,59 @@ func (mgr *MongoDBMerchantManager) GetByManagerUserID(managerUserID string) *dom
 	return merchants[0]
 }
 
+func (mgr *MongoDBMerchantManager) KickOutStaff(userID string) error {
+	mc := mgr.GetByUserID(userID)
+	if mc == nil {
+		return nil
+	}
+
+	if mc.ManagerUserID.Hex() == userID {
+		return failure.New(FAIL_CD_CANNOT_KICK_OUT_MANAGER)
+	}
+
+	if err := mgr.merchantCollection.Update(bson.M{
+		"_id": mc.ID,
+	}, bson.M{
+		"$pull": bson.M{
+			"staffUserIds": bson.ObjectIdHex(userID),
+		},
+	}); err != nil {
+		panic(err)
+	}
+
+	return nil
+}
+
+func (mgr *MongoDBMerchantManager) PullInStaff(merchantID, userID string) error {
+	if mgr.GetByUserID(userID) != nil {
+		return failure.New(FAIL_CD_USER_IS_BOUND)
+	}
+
+	if err := mgr.merchantCollection.Update(bson.M{
+		"_id": bson.ObjectIdHex(merchantID),
+	}, bson.M{
+		"$addToSet": bson.M{
+			"staffUserIds": bson.ObjectIdHex(userID),
+		},
+	}); err != nil {
+		panic(err)
+	}
+
+	return nil
+}
+
 func (mgr *MongoDBMerchantManager) Register(userID, name, managerUserID, itemsOfBusiness, contactsName, contactsMobile, contactsIDCard, contactsAddress string) error {
 	if mgr.GetByName(name) != nil {
 		return failure.New(FAIL_CD_DUPLICATE_MERCHANT_NAME)
 	}
 
-	if mgr.GetByManagerUserID(managerUserID) != nil {
-		return failure.New(FAIL_CD_MANAGER_USER_IS_BOUND)
+	if mgr.GetByUserID(managerUserID) != nil {
+		return failure.New(FAIL_CD_USER_IS_BOUND)
 	}
 
 	mgrUser := mgr.userManager.Get(managerUserID)
 
-	if err := mgr.merchantCollection.Insert(&domain.Merchant{
+	if err := mgr.merchantCollection.Insert(&merchant_domain.Merchant{
 		Name: name,
 		ManagerUserID: mgrUser.ID,
 		ManagerUserName: mgrUser.Name,
@@ -135,7 +195,7 @@ func (mgr *MongoDBMerchantManager) Register(userID, name, managerUserID, itemsOf
 	}
 
 	permSet := permission.PermissionSet(mgrUser.FlatPermissions)
-	permSet.Add("USER.MERCHANT_STAFF.RETRIEVE", "USER.MERCHANT_STAFF.MODIFY")
+	permSet.Add("MERCHANT.STAFF.RETRIEVE", "MERCHANT.STAFF.MODIFY")
 
 	if err := mgr.userManager.GrantFlatPermissions(userID, managerUserID, set.StringSlice(permSet)); err != nil {
 		return err
@@ -144,8 +204,8 @@ func (mgr *MongoDBMerchantManager) Register(userID, name, managerUserID, itemsOf
 	return nil
 }
 
-func (mgr *MongoDBMerchantManager) Retrieve(lastID *string, limit int, name string) []*domain.Merchant {
-	merchants := make([]*domain.Merchant, 0)
+func (mgr *MongoDBMerchantManager) Retrieve(lastID *string, limit int, name string) []*merchant_domain.Merchant {
+	merchants := make([]*merchant_domain.Merchant, 0)
 	query := bson.M{}
 	if lastID != nil {
 		query["_id"] = bson.M{
@@ -161,6 +221,34 @@ func (mgr *MongoDBMerchantManager) Retrieve(lastID *string, limit int, name stri
 		panic(err)
 	}
 	return merchants
+}
+
+func (mgr *MongoDBMerchantManager) RetrieveStaffs(lastID *string, limit int, merchantID string, name string) []*user_domain.User {
+	users := make([]*user_domain.User, 0)
+	query := bson.M{}
+
+	mc := mgr.Get(merchantID)
+
+	idFilter := bson.M{}
+	query["_id"] = idFilter
+
+	staffIds := make([]bson.ObjectId, 0, len(mc.StaffUsersIds) + 1)
+	staffIds = append(staffIds, mc.ManagerUserID)
+	staffIds = append(staffIds, mc.StaffUsersIds...)
+	idFilter["$in"] = staffIds
+
+	if lastID != nil {
+		idFilter["$gt"] = bson.ObjectIdHex(*lastID)
+	}
+	if len(name) != 0 {
+		query["name"] = bson.RegEx{
+			Pattern: js_regex.EscapeTextPattern(name),
+		}
+	}
+	if err := mgr.userCollection.Find(query).Sort("_id").Limit(limit).All(&users); err != nil {
+		panic(err)
+	}
+	return users
 }
 
 func (mgr *MongoDBMerchantManager) Update(id, name, itemsOfBusiness, contactsName, contactsMobile, contactsIDCard, contactsAddress string) {
