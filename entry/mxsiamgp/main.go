@@ -239,6 +239,15 @@ func main() {
 			return &user_service.LogoutParam{}
 		},
 	})
+	rpc.RegisterProcess("user.logout_for_wechat", &rest_json_rpc.Process{
+		Handlers: []rest_json_rpc.ProcessHandler{
+			user_service.EnsureWechatAuthorizedProcessHandler(wcCli, wcAuthURL.String(), "snsapi_userinfo", ""),
+			user_service.LogoutForWechatProcessHandler(userMgr),
+		},
+		ParamFactory: func() interface{} {
+			return &user_service.LogoutForWechatParam{}
+		},
+	})
 
 	// 商家模块过程
 	mcMgr := merchant_business.NewMongoDBMerchantManager(mgoConn.DB("mxsiamgp"), userMgr)
