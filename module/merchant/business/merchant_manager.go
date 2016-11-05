@@ -70,7 +70,7 @@ type MongoDBMerchantManager struct {
 	userManager        business.UserManager
 }
 
-// 创建一个MongoDB用户管理器
+// 创建一个MongoDB商家管理器
 func NewMongoDBMerchantManager(mxsDB *mgo.Database, userMgr business.UserManager) *MongoDBMerchantManager {
 	return &MongoDBMerchantManager{
 		merchantCollection: mxsDB.C("Merchants"),
