@@ -92,7 +92,7 @@ type GetParam struct {
 	ID string `json:"id"`
 }
 
-// 获取一个用户
+// 获取一个商家
 func GetProcessHandler(mcMgr merchant_business.MerchantManager) rest_json_rpc.ProcessHandler {
 	return func(_ echo.Context, p interface{}, _ *rest_json_rpc.ProcessChain) interface{} {
 		param := p.(*GetParam)
