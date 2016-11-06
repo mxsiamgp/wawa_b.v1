@@ -253,6 +253,18 @@ func main() {
 
 	// 赛事模块过程
 	cmptMgr := competition_business.NewMongoDBCompetitionManager(mgoConn.DB("mxsiamgp"))
+	rpc.RegisterProcess("competition.add", &rest_json_rpc.Process{
+		Handlers: []rest_json_rpc.ProcessHandler{
+			user_service.EnsureLoggedInProcessHandler(),
+			user_service.EnsureRequiredPermissionsProcessHandler(userMgr, []string{
+				"COMPETITION.MODIFY",
+			}),
+			competition_service.AddProcessHandler(cmptMgr),
+		},
+		ParamFactory: func() interface{} {
+			return &competition_service.AddParam{}
+		},
+	})
 	rpc.RegisterProcess("competition.delete", &rest_json_rpc.Process{
 		Handlers: []rest_json_rpc.ProcessHandler{
 			user_service.EnsureLoggedInProcessHandler(),
@@ -265,6 +277,18 @@ func main() {
 			return &competition_service.DeleteParam{}
 		},
 	})
+	rpc.RegisterProcess("competition.finish", &rest_json_rpc.Process{
+		Handlers: []rest_json_rpc.ProcessHandler{
+			user_service.EnsureLoggedInProcessHandler(),
+			user_service.EnsureRequiredPermissionsProcessHandler(userMgr, []string{
+				"COMPETITION.MODIFY",
+			}),
+			competition_service.FinishProcessHandler(cmptMgr),
+		},
+		ParamFactory: func() interface{} {
+			return &competition_service.FinishParam{}
+		},
+	})
 	rpc.RegisterProcess("competition.get", &rest_json_rpc.Process{
 		Handlers: []rest_json_rpc.ProcessHandler{
 			user_service.EnsureLoggedInProcessHandler(),
@@ -272,18 +296,6 @@ func main() {
 		},
 		ParamFactory: func() interface{} {
 			return &competition_service.GetParam{}
-		},
-	})
-	rpc.RegisterProcess("competition.add", &rest_json_rpc.Process{
-		Handlers: []rest_json_rpc.ProcessHandler{
-			user_service.EnsureLoggedInProcessHandler(),
-			user_service.EnsureRequiredPermissionsProcessHandler(userMgr, []string{
-				"COMPETITION.MODIFY",
-			}),
-			competition_service.AddProcessHandler(cmptMgr),
-		},
-		ParamFactory: func() interface{} {
-			return &competition_service.AddParam{}
 		},
 	})
 	rpc.RegisterProcess("competition.retrieve", &rest_json_rpc.Process{

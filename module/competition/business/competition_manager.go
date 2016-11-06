@@ -23,6 +23,9 @@ type CompetitionManager interface {
 	// 删除一个赛事
 	Delete(id string)
 
+	// 完成一个赛事
+	Finish(id string)
+
 	// 获取一个赛事
 	Get(id string) *domain.Competition
 
@@ -60,6 +63,7 @@ func (mgr *MongoDBCompetitionManager) Add(name string, tickets []*domain.Ticket)
 
 	if err := mgr.competitionCollection.Insert(&domain.Competition{
 		Name: name,
+		IsFinished: false,
 		Tickets: tickets,
 	}); err != nil {
 		panic(err)
@@ -70,6 +74,16 @@ func (mgr *MongoDBCompetitionManager) Add(name string, tickets []*domain.Ticket)
 
 func (mgr *MongoDBCompetitionManager) Delete(id string) {
 	if err := mgr.competitionCollection.RemoveId(bson.ObjectIdHex(id)); err != nil {
+		panic(err)
+	}
+}
+
+func (mgr *MongoDBCompetitionManager) Finish(id string) {
+	if err := mgr.competitionCollection.UpdateId(bson.ObjectIdHex(id), bson.M{
+		"$set": bson.M{
+			"isFinished": true,
+		},
+	}); err != nil {
 		panic(err)
 	}
 }

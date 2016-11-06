@@ -8,33 +8,6 @@ import (
 	"github.com/labstack/echo"
 )
 
-type DeleteParam struct {
-	// ID
-	ID string `json:"id"`
-}
-
-// 删除一个赛事
-func DeleteProcessHandler(cmptMgr business.CompetitionManager) rest_json_rpc.ProcessHandler {
-	return func(ctx echo.Context, p interface{}, _ *rest_json_rpc.ProcessChain) interface{} {
-		param := p.(*DeleteParam)
-		cmptMgr.Delete(param.ID)
-		return nil
-	}
-}
-
-type GetParam struct {
-	// ID
-	ID string `json:"id"`
-}
-
-// 获取一个赛事
-func GetProcessHandler(cmptMgr business.CompetitionManager) rest_json_rpc.ProcessHandler {
-	return func(_ echo.Context, p interface{}, _ *rest_json_rpc.ProcessChain) interface{} {
-		param := p.(*GetParam)
-		return cmptMgr.Get(param.ID)
-	}
-}
-
 type AddParam struct {
 	// 赛事名
 	Name    string `json:"name"`
@@ -51,6 +24,47 @@ func AddProcessHandler(cmptMgr business.CompetitionManager) rest_json_rpc.Proces
 			panic(err)
 		}
 		return nil
+	}
+}
+
+type DeleteParam struct {
+	// ID
+	ID string `json:"id"`
+}
+
+// 删除一个赛事
+func DeleteProcessHandler(cmptMgr business.CompetitionManager) rest_json_rpc.ProcessHandler {
+	return func(ctx echo.Context, p interface{}, _ *rest_json_rpc.ProcessChain) interface{} {
+		param := p.(*DeleteParam)
+		cmptMgr.Delete(param.ID)
+		return nil
+	}
+}
+
+type FinishParam struct {
+	// ID
+	ID string `json:"id"`
+}
+
+// 完成一个赛事
+func FinishProcessHandler(cmptMgr business.CompetitionManager) rest_json_rpc.ProcessHandler {
+	return func(ctx echo.Context, p interface{}, _ *rest_json_rpc.ProcessChain) interface{} {
+		param := p.(*FinishParam)
+		cmptMgr.Finish(param.ID)
+		return nil
+	}
+}
+
+type GetParam struct {
+	// ID
+	ID string `json:"id"`
+}
+
+// 获取一个赛事
+func GetProcessHandler(cmptMgr business.CompetitionManager) rest_json_rpc.ProcessHandler {
+	return func(_ echo.Context, p interface{}, _ *rest_json_rpc.ProcessChain) interface{} {
+		param := p.(*GetParam)
+		return cmptMgr.Get(param.ID)
 	}
 }
 
