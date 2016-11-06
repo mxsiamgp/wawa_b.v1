@@ -265,6 +265,26 @@ func main() {
 			return &competition_service.AddParam{}
 		},
 	})
+
+	wcPayCli := wechat_pay_client.NewWechatPayClient(&fasthttp.Client{}, v.GetString("wechat.appId"), v.GetString("wechat.mchId"), v.GetString("wechat.partnerKey"))
+
+	wcH5PayWpTitle := "海南超跑赛车收费服务平台"
+	orderMgr := order_business.NewMongoDBOrderManager(mgoConn.DB("mxsiamgp"),
+		map[string]order_business.OrderItemPayNotifyCallback{
+			"COMPETITION.TICKET": func(orderID, orderItemID string) {
+			},
+		},
+		wcPayCli, &wcH5PayWpTitle)
+
+	rpc.RegisterProcess("competition.create_order", &rest_json_rpc.Process{
+		Handlers: []rest_json_rpc.ProcessHandler{
+			user_service.EnsureLoggedInProcessHandler(),
+			competition_service.CreateOrderProcessHandler(cmptMgr, orderMgr),
+		},
+		ParamFactory: func() interface{} {
+			return &competition_service.CreateOrderParam{}
+		},
+	})
 	rpc.RegisterProcess("competition.delete", &rest_json_rpc.Process{
 		Handlers: []rest_json_rpc.ProcessHandler{
 			user_service.EnsureLoggedInProcessHandler(),
@@ -296,6 +316,15 @@ func main() {
 		},
 		ParamFactory: func() interface{} {
 			return &competition_service.GetParam{}
+		},
+	})
+	rpc.RegisterProcess("competition.list_in_progress", &rest_json_rpc.Process{
+		Handlers: []rest_json_rpc.ProcessHandler{
+			user_service.EnsureLoggedInProcessHandler(),
+			competition_service.ListInProgressProcessHandler(cmptMgr),
+		},
+		ParamFactory: func() interface{} {
+			return &competition_service.ListInProgressParam{}
 		},
 	})
 	rpc.RegisterProcess("competition.retrieve", &rest_json_rpc.Process{
@@ -446,8 +475,6 @@ func main() {
 		},
 	})
 
-	wcPayCli := wechat_pay_client.NewWechatPayClient(&fasthttp.Client{}, v.GetString("wechat.appId"), v.GetString("wechat.mchId"), v.GetString("wechat.partnerKey"))
-
 	// 微信支付模块过程
 	rpc.RegisterProcess("wechat_pay.get_wechat_pay_jssdk_config", &rest_json_rpc.Process{
 		Handlers: []rest_json_rpc.ProcessHandler{
@@ -457,14 +484,6 @@ func main() {
 			return &wechat_pay_service.GetWechatPayJSSDKConfigParam{}
 		},
 	})
-
-	wcH5PayWpTitle := "海南超跑赛车收费服务平台"
-	orderMgr := order_business.NewMongoDBOrderManager(mgoConn.DB("mxsiamgp"),
-		map[string]order_business.OrderItemPayNotifyCallback{
-			"TICKET": func(orderID, orderItemID string) {
-			},
-		},
-		wcPayCli, &wcH5PayWpTitle)
 
 	// 订单模块过程
 	rpc.RegisterProcess("order.get_all_orders_by_user_id", &rest_json_rpc.Process{

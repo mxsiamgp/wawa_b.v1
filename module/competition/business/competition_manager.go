@@ -32,6 +32,9 @@ type CompetitionManager interface {
 	// 根据赛事名获取一个赛事
 	GetByName(name string) *domain.Competition
 
+	// 列出正在进行的赛事
+	ListInProgress() []*domain.Competition
+
 	// 检索赛事
 	Retrieve(lastID *string, limit int, name string) []*domain.Competition
 
@@ -110,6 +113,16 @@ func (mgr *MongoDBCompetitionManager) GetByName(name string) *domain.Competition
 		return nil
 	}
 	return competitions[0]
+}
+
+func (mgr *MongoDBCompetitionManager) ListInProgress() []*domain.Competition {
+	competitions := make([]*domain.Competition, 0)
+	if err := mgr.competitionCollection.Find(bson.M{
+		"isFinished": false,
+	}).Sort("_id").All(&competitions); err != nil {
+		panic(err)
+	}
+	return competitions
 }
 
 func (mgr *MongoDBCompetitionManager) Retrieve(lastID *string, limit int, name string) []*domain.Competition {
