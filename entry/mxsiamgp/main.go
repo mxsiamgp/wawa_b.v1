@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"time"
 
+	competition_business "wawa_b.v1/module/competition/business"
+	competition_service "wawa_b.v1/module/competition/service"
 	"wawa_b.v1/module/config"
 	merchant_business "wawa_b.v1/module/merchant/business"
 	merchant_service "wawa_b.v1/module/merchant/service"
@@ -246,6 +248,66 @@ func main() {
 		},
 		ParamFactory: func() interface{} {
 			return &user_service.LogoutForWechatParam{}
+		},
+	})
+
+	// 赛事模块过程
+	cmptMgr := competition_business.NewMongoDBCompetitionManager(mgoConn.DB("mxsiamgp"))
+	rpc.RegisterProcess("competition.delete", &rest_json_rpc.Process{
+		Handlers: []rest_json_rpc.ProcessHandler{
+			user_service.EnsureLoggedInProcessHandler(),
+			user_service.EnsureRequiredPermissionsProcessHandler(userMgr, []string{
+				"COMPETITION.MODIFY",
+			}),
+			competition_service.DeleteProcessHandler(cmptMgr),
+		},
+		ParamFactory: func() interface{} {
+			return &competition_service.DeleteParam{}
+		},
+	})
+	rpc.RegisterProcess("competition.get", &rest_json_rpc.Process{
+		Handlers: []rest_json_rpc.ProcessHandler{
+			user_service.EnsureLoggedInProcessHandler(),
+			competition_service.GetProcessHandler(cmptMgr),
+		},
+		ParamFactory: func() interface{} {
+			return &competition_service.GetParam{}
+		},
+	})
+	rpc.RegisterProcess("competition.add", &rest_json_rpc.Process{
+		Handlers: []rest_json_rpc.ProcessHandler{
+			user_service.EnsureLoggedInProcessHandler(),
+			user_service.EnsureRequiredPermissionsProcessHandler(userMgr, []string{
+				"COMPETITION.MODIFY",
+			}),
+			competition_service.AddProcessHandler(cmptMgr),
+		},
+		ParamFactory: func() interface{} {
+			return &competition_service.AddParam{}
+		},
+	})
+	rpc.RegisterProcess("competition.retrieve", &rest_json_rpc.Process{
+		Handlers: []rest_json_rpc.ProcessHandler{
+			user_service.EnsureLoggedInProcessHandler(),
+			user_service.EnsureRequiredPermissionsProcessHandler(userMgr, []string{
+				"COMPETITION.RETRIEVE",
+			}),
+			competition_service.RetrieveProcessHandler(cmptMgr),
+		},
+		ParamFactory: func() interface{} {
+			return &competition_service.RetrieveParam{}
+		},
+	})
+	rpc.RegisterProcess("competition.update_tickets", &rest_json_rpc.Process{
+		Handlers: []rest_json_rpc.ProcessHandler{
+			user_service.EnsureLoggedInProcessHandler(),
+			user_service.EnsureRequiredPermissionsProcessHandler(userMgr, []string{
+				"COMPETITION.MODIFY",
+			}),
+			competition_service.UpdateTicketsProcessHandler(cmptMgr),
+		},
+		ParamFactory: func() interface{} {
+			return &competition_service.UpdateTicketsParam{}
 		},
 	})
 

@@ -23,6 +23,8 @@ db.Users.insert({
         'MERCHANT.STAFF.MODIFY',
         'MERCHANT.RETRIEVE',
         'MERCHANT.MODIFY',
+        'COMPETITION.RETRIEVE',
+        'COMPETITION.MODIFY',
         'USER.RETRIEVE',
         'USER.MODIFY',
         'USER.SPONSOR_MANAGER'
