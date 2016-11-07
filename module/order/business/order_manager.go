@@ -170,7 +170,6 @@ func (mgr *MongoDBOrderManager) PayByWechatH5(orderID, spbillCreateIP, notifyURL
 
 	if err := mgr.orderCollection.Update(bson.M{
 		"_id": bson.ObjectIdHex(orderID),
-		"wechatPayOutTradeNo": nil,
 	}, bson.M{
 		"$set": bson.M{
 			"wechatPayOutTradeNo": outTradeNo,
