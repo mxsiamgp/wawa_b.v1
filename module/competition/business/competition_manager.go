@@ -145,6 +145,9 @@ func (mgr *MongoDBCompetitionManager) Retrieve(lastID *string, limit int, name s
 }
 
 func (mgr *MongoDBCompetitionManager) UpdateTickets(id string, tickets []*domain.Ticket) {
+	for _, ticket := range tickets {
+		ticket.ID = bson.NewObjectId()
+	}
 	if err := mgr.competitionCollection.UpdateId(bson.ObjectIdHex(id), bson.M{
 		"$set": bson.M{
 			"tickets": tickets,

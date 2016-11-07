@@ -269,17 +269,18 @@ func main() {
 	wcPayCli := wechat_pay_client.NewWechatPayClient(&fasthttp.Client{}, v.GetString("wechat.appId"), v.GetString("wechat.mchId"), v.GetString("wechat.partnerKey"))
 
 	wcH5PayWpTitle := "海南超跑赛车收费服务平台"
-	orderMgr := order_business.NewMongoDBOrderManager(mgoConn.DB("mxsiamgp"),
-		map[string]order_business.OrderItemPayNotifyCallback{
-			"COMPETITION.TICKET": func(orderID, orderItemID string) {
-			},
-		},
-		wcPayCli, &wcH5PayWpTitle)
+
+	pncbist := map[string]order_business.OrderItemPayNotifyCallback{}
+	orderMgr := order_business.NewMongoDBOrderManager(mgoConn.DB("mxsiamgp"), pncbist, wcPayCli, &wcH5PayWpTitle)
+
+	ticketMgr := competition_business.NewMongoDBDrawnTicketManager(mgoConn.DB("mxsiamgp"), cmptMgr, orderMgr)
+
+	pncbist["COMPETITION.TICKET"] = ticketMgr.OrderItemPayNotifyCallback()
 
 	rpc.RegisterProcess("competition.create_order", &rest_json_rpc.Process{
 		Handlers: []rest_json_rpc.ProcessHandler{
 			user_service.EnsureLoggedInProcessHandler(),
-			competition_service.CreateOrderProcessHandler(cmptMgr, orderMgr),
+			competition_service.CreateOrderProcessHandler(ticketMgr),
 		},
 		ParamFactory: func() interface{} {
 			return &competition_service.CreateOrderParam{}
@@ -503,7 +504,7 @@ func main() {
 
 	wcPayNotifyCbURL := &url.URL{
 		Scheme: "http",
-		Host: v.GetString("frontend.host"),
+		Host: v.GetString("backend.host"),
 		Path: "/order/wechat_pay_notify_callback",
 	}
 	rpc.RegisterProcess("order.pay_by_wechat_h5", &rest_json_rpc.Process{

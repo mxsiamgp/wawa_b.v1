@@ -3,15 +3,12 @@ package service
 import (
 	competition_business "wawa_b.v1/module/competition/business"
 	competition_domain "wawa_b.v1/module/competition/domain"
-	order_business "wawa_b.v1/module/order/business"
-	order_domain "wawa_b.v1/module/order/domain"
 	"wawa_b.v1/module/rest_json_rpc"
 	"wawa_b.v1/module/session"
 	user_service "wawa_b.v1/module/user/service"
 
 	"github.com/labstack/echo"
 	"github.com/pkg/errors"
-	"github.com/pquerna/ffjson/ffjson"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -34,19 +31,14 @@ func AddProcessHandler(cmptMgr competition_business.CompetitionManager) rest_jso
 	}
 }
 
-type CreateOrderParamItems struct {
-	TicketID string `json:"ticket_id"`
-	Quantity int `json:"quantity"`
-}
-
 type CreateOrderParam struct {
 	CompetitionID string `json:"competition_id"`
-	Items         []*CreateOrderParamItems `json:"items"`
+	Tickets       []*competition_business.CreateOrderTicket `json:"tickets"`
 }
 
 // 创建一个订单
 // + 确保登录
-func CreateOrderProcessHandler(cmptMgr competition_business.CompetitionManager, orderMgr order_business.OrderManager) rest_json_rpc.ProcessHandler {
+func CreateOrderProcessHandler(ticketMgr competition_business.DrawnTicketManager) rest_json_rpc.ProcessHandler {
 	return func(ctx echo.Context, p interface{}, _ *rest_json_rpc.ProcessChain) interface{} {
 		param := p.(*CreateOrderParam)
 
@@ -56,43 +48,7 @@ func CreateOrderProcessHandler(cmptMgr competition_business.CompetitionManager, 
 			panic(errors.New("请确保用户已登录"))
 		}
 
-		orderItems := make([]*order_domain.OrderItem, 0, len(param.Items))
-		cmpt := cmptMgr.Get(param.CompetitionID)
-		if cmpt == nil {
-			panic(errors.New("无效的赛事ID"))
-		}
-
-		tickets := map[string]*competition_domain.Ticket{}
-
-		for _, ticket := range cmpt.Tickets {
-			tickets[ticket.ID.Hex()] = ticket
-		}
-
-		for _, item := range param.Items {
-			ticket, ok := tickets[item.TicketID]
-			if !ok {
-				panic(errors.New("无效的门票ID"))
-			}
-
-			valBytes, err := ffjson.Marshal(map[string]interface{}{
-				"competition_name": cmpt.Name,
-				"ticket_name": ticket.Name,
-				"ticket_price_fee": ticket.PriceFee,
-				"ticket_quantity": item.Quantity,
-			})
-			if err != nil {
-				panic(err)
-			}
-
-			orderItems = append(orderItems, &order_domain.OrderItem{
-				SellableType: "COMPETITION.TICKET",
-				SellableValue: string(valBytes),
-				Quantity: item.Quantity,
-				TotalPriceFee: ticket.PriceFee * item.Quantity,
-			})
-		}
-
-		orderMgr.Create(userID.Hex(), orderItems)
+		ticketMgr.CreateOrder(userID.Hex(), param.CompetitionID, param.Tickets)
 
 		return nil
 	}
