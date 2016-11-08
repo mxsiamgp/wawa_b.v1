@@ -230,7 +230,7 @@ func main() {
 		Scheme: "http",
 		Host: v.GetString("frontend.host"),
 		Path: "/module/wechat/html/index.html",
-		Fragment: "#/user/wechat/login",
+		Fragment: "/user/wechat/login",
 	}
 	e.GET("/user/wechat_auth", user_service.WechatAuthHandlerFunc(userMgr, wcCli, wcLoginURL.String()))
 	rpc.RegisterProcess("user.logout", &rest_json_rpc.Process{
@@ -350,6 +350,18 @@ func main() {
 		},
 		ParamFactory: func() interface{} {
 			return &competition_service.UpdateTicketsParam{}
+		},
+	})
+	rpc.RegisterProcess("competition.drawn_ticket.get_all_by_competition_id_and_user_id", &rest_json_rpc.Process{
+		Handlers: []rest_json_rpc.ProcessHandler{
+			user_service.EnsureLoggedInProcessHandler(),
+			user_service.EnsureRequiredPermissionsProcessHandler(userMgr, []string{
+				"COMPETITION.DRAWN_TICKET.INSPECT",
+			}),
+			competition_service.GetAllDrawnTicketsByCompetitionIDAndUserIDProcessHandler(ticketMgr),
+		},
+		ParamFactory: func() interface{} {
+			return &competition_service.GetAllDrawnTicketsByCompetitionIDAndUserIDParam{}
 		},
 	})
 

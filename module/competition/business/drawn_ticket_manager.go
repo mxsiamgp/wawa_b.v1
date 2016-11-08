@@ -17,6 +17,9 @@ type DrawnTicketManager interface {
 	// 创建订单
 	CreateOrder(userID string, competitionID string, tickets []*CreateOrderTicket)
 
+	// 根据赛事ID与用户ID获取所有门票
+	GetAllByCompetitionIDAndUserID(competitionID, userID string) []*competition_domain.DrawnTicket
+
 	// 订单项目支付通知回调
 	OrderItemPayNotifyCallback() order_business.OrderItemPayNotifyCallback
 }
@@ -87,6 +90,18 @@ func (mgr *MongoDBDrawnTicketManager) CreateOrder(userID string, cmptID string, 
 	}
 
 	mgr.orderManager.Create(userID, orderItems)
+}
+
+func (mgr *MongoDBDrawnTicketManager) GetAllByCompetitionIDAndUserID(cmptID, userID string) []*competition_domain.DrawnTicket {
+	tickets := make([]*competition_domain.DrawnTicket, 0)
+	query := bson.M{
+		"competitionId": bson.ObjectIdHex(cmptID),
+		"userId": bson.ObjectIdHex(userID),
+	}
+	if err := mgr.drawnTicketCollection.Find(query).Sort("_id").All(&tickets); err != nil {
+		panic(err)
+	}
+	return tickets
 }
 
 func (mgr *MongoDBDrawnTicketManager) OrderItemPayNotifyCallback() order_business.OrderItemPayNotifyCallback {

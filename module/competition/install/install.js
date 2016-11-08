@@ -13,6 +13,7 @@ db.DrawnTickets.ensureIndex({
     unique: true
 });
 db.DrawnTickets.ensureIndex({
+    competitionId: 1,
     userId: 1
 }, {
     unique: false

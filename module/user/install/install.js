@@ -18,11 +18,11 @@ db.Users.insert({
     nickname: '主办方管理员',
     mobile: '',
     flatPermissions: [
-        'TICKET.INSPECT',
         'MERCHANT.STAFF.RETRIEVE',
         'MERCHANT.STAFF.MODIFY',
         'MERCHANT.RETRIEVE',
         'MERCHANT.MODIFY',
+        'COMPETITION.DRAWN_TICKET.INSPECT',
         'COMPETITION.RETRIEVE',
         'COMPETITION.MODIFY',
         'USER.RETRIEVE',
