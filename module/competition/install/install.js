@@ -18,3 +18,11 @@ db.DrawnTickets.ensureIndex({
 }, {
     unique: false
 });
+
+db.createCollection('Inspections');
+db.Inspections.ensureIndex({
+    competitionId: 1,
+    userId: 1
+}, {
+    unique: true
+});

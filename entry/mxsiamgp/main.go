@@ -365,6 +365,21 @@ func main() {
 		},
 	})
 
+	inspectMgr := competition_business.NewMongoDBInspectionManager(mgoConn.DB("mxsiamgp"))
+
+	rpc.RegisterProcess("competition.inspection.mark_inspected", &rest_json_rpc.Process{
+		Handlers: []rest_json_rpc.ProcessHandler{
+			user_service.EnsureLoggedInProcessHandler(),
+			user_service.EnsureRequiredPermissionsProcessHandler(userMgr, []string{
+				"COMPETITION.DRAWN_TICKET.INSPECT",
+			}),
+			competition_service.MarkInspectedProcessHandler(inspectMgr),
+		},
+		ParamFactory: func() interface{} {
+			return &competition_service.MarkInspectedParam{}
+		},
+	})
+
 	// 商家模块过程
 	mcMgr := merchant_business.NewMongoDBMerchantManager(mgoConn.DB("mxsiamgp"), userMgr)
 	rpc.RegisterProcess("merchant.delete", &rest_json_rpc.Process{
