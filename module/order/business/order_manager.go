@@ -33,7 +33,7 @@ const (
 // 订单管理器
 type OrderManager interface {
 	// 创建一个新订单
-	Create(userID string, items []*domain.OrderItem)
+	Create(userID string, items []*domain.OrderItem) string
 
 	// 根据ID获取订单
 	Get(id string) *domain.Order
@@ -84,7 +84,7 @@ wcPayCli *wechat_pay_client.WechatPayClient, wcH5PayWpTitle *string) *MongoDBOrd
 	}
 }
 
-func (mgr *MongoDBOrderManager) Create(userID string, items []*domain.OrderItem) {
+func (mgr *MongoDBOrderManager) Create(userID string, items []*domain.OrderItem) string {
 	for _, item := range items {
 		item.ID = bson.NewObjectId()
 	}
@@ -94,7 +94,10 @@ func (mgr *MongoDBOrderManager) Create(userID string, items []*domain.OrderItem)
 		price += item.TotalPriceFee
 	}
 
+	id := bson.NewObjectId()
+
 	if err := mgr.orderCollection.Insert(&domain.Order{
+		ID: id,
 		UserID: bson.ObjectIdHex(userID),
 		CreatedTime: time.Now(),
 		Items: items,
@@ -103,6 +106,8 @@ func (mgr *MongoDBOrderManager) Create(userID string, items []*domain.OrderItem)
 	}); err != nil {
 		panic(err)
 	}
+
+	return id.Hex()
 }
 
 func (mgr *MongoDBOrderManager) Get(id string) *domain.Order {
