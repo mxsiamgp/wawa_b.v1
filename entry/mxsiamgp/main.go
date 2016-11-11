@@ -493,6 +493,22 @@ func main() {
 		},
 	})
 
+	mcOrderMgr := merchant_business.NewMongoDBMerchantOrderManager(mgoConn.DB("mxsiamgp"), mcMgr, orderMgr)
+
+	rpc.RegisterProcess("merchant.create_merchant_order", &rest_json_rpc.Process{
+		Handlers: []rest_json_rpc.ProcessHandler{
+			user_service.EnsureLoggedInProcessHandler(),
+			user_service.EnsureResourceBelongToCurrentUserProcessHandler(userMgr, func(_ echo.Context, p interface{}, userID string) bool {
+				param := p.(*merchant_service.CreateMerchantOrderParam)
+				return param.UserID == userID
+			}),
+			merchant_service.CreateMerchantOrderProcessHandler(mcOrderMgr),
+		},
+		ParamFactory: func() interface{} {
+			return &merchant_service.CreateMerchantOrderParam{}
+		},
+	})
+
 	// 微信模块过程
 	rpc.RegisterProcess("wechat.get_wechat_jssdk_config", &rest_json_rpc.Process{
 		Handlers: []rest_json_rpc.ProcessHandler{
